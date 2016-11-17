@@ -1,0 +1,20 @@
+{
+    "name": "dhiraj/yii2-fcm",
+    "description": "Firebase notifications powered by yii2 httpclient",
+    "type": "library",
+    "require": {
+        "yiisoft/yii2-httpclient": "^2.0"
+    },
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Dhiraj Gupta",
+            "email": "dhiraj@traversient.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "traversient\\yii\\": ""
+        }
+    }
+}
