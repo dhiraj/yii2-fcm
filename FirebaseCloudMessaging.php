@@ -24,8 +24,9 @@ class FirebaseCloudMessaging extends Component
         $this->myConfig = $config;
         $this->apiClient = new Client([
             'transport' => 'yii\httpclient\CurlTransport',
-            'baseUrl' => 'https://fcm.googleapis.com',
-
+            'requestConfig' => [
+                'format' => Client::FORMAT_JSON
+            ],
             'responseConfig' => [
                 'format' => Client::FORMAT_JSON
             ],
@@ -37,27 +38,46 @@ class FirebaseCloudMessaging extends Component
         if (empty($this->myConfig['api_key'])){
             throw new InvalidCallException("api_key must be present in config array!");
         }
+        $this->api_key = $this->myConfig['api_key'];
         if (empty($this->myConfig['project_id'])){
             throw new InvalidCallException("project_id must be present in config array!");
         }
+        $this->project_id = $this->myConfig['project_id'];
     }
 
     public function sendMessage(string $to,array $notificationPayload = null, array $dataPayload = null){
-        $fullPayload = [];
         if (empty($to)){
             throw new ServerErrorHttpException("A recipient MUST be provided as registration token id OR full topic path OR notification key");
         }
-        $fullPayload["to"] = $to;
+        $fullPayload = ["to" => $to];
         if (empty($notificationPayload) && empty($dataPayload)){
-            throw new ServerErrorHttpException("At least one of notificationPayload or dataPayload MUST be provided")
+            throw new ServerErrorHttpException("At least one of notificationPayload or dataPayload MUST be provided");
         }
-//        $fullPayload[]
-//        $response_accesstoken = $this->apiClient->post("/fcm",[])->send();
-//        if (! $response_accesstoken->getIsOk()){
-//            $imploded = VarDumper::dumpAsString($response_accesstoken->getData());
-//            throw new ServerErrorHttpException("Did not get ok response, data: {$imploded}");
-//        }
-//        $responseData = $response_accesstoken->getData();
-//        return $responseData;
+        if (!empty($notificationPayload)){
+            $fullPayload["notification"] = $notificationPayload;
+        }
+        if (!empty($dataPayload)){
+            $fullPayload["data"] = $dataPayload;
+        }
+
+        $request = $this->apiClient->createRequest();
+        $request->setUrl("https://fcm.googleapis.com/fcm/send")
+            ->setMethod("POST")
+            ->setData($fullPayload)
+            ->setHeaders([
+            "Accept"=>"application/json",
+            "Content-Type"=>"application/json",
+            "Authorization"=>"key=$this->api_key"
+        ])
+        ;
+
+        $response_send = $request->send();
+        if (! $response_send->getIsOk()){
+
+            $imploded = VarDumper::dumpAsString($response_send->getData());
+            throw new ServerErrorHttpException("Did not get ok response, data: {$imploded}");
+        }
+        $responseData = $response_send->getData();
+        return $responseData;
     }
 }
