@@ -3,6 +3,7 @@
 namespace traversient\yii;
 use yii\base\Component;
 use yii\base\InvalidCallException;
+use yii\base\InvalidParamException;
 use yii\helpers\VarDumper;
 use yii\httpclient\Client;
 use yii\web\ServerErrorHttpException;
@@ -59,6 +60,9 @@ class FirebaseCloudMessaging extends Component
         if (!empty($dataPayload)){
             $fullPayload["data"] = $dataPayload;
         }
+        $sfullPayload = VarDumper::dumpAsString($fullPayload);
+        \Yii::info("Sending message to FCM: $sfullPayload","cron");
+
 
         $request = $this->apiClient->createRequest();
         $request->setUrl("https://fcm.googleapis.com/fcm/send")
@@ -71,9 +75,14 @@ class FirebaseCloudMessaging extends Component
         ])
         ;
 
-        $response_send = $request->send();
+        $response_send = null;
+        try{
+            $response_send = $request->send();
+        }
+        catch (InvalidParamException $exception){
+            \Yii::error("Exception caught while trying to send FCM request: $exception","cron");
+        }
         if (! $response_send->getIsOk()){
-
             $imploded = VarDumper::dumpAsString($response_send->getData());
             throw new ServerErrorHttpException("Did not get ok response, data: {$imploded}");
         }
